@@ -1,0 +1,40 @@
+syntax="proto3";
+
+option go_package="grpc-learn/proto/payment";
+
+package payment;
+
+service PaymentsService {
+  rpc GetBalance (BalanceRequest) returns (BalanceResponse) {};
+  rpc Deposit(DepositRequest) returns (DepositResponse) {};
+  rpc Withdraw(WithdrawRequest) returns (WithdrawResponse) {};
+}
+
+message BalanceRequest {
+  int32 userId = 1;
+}
+
+message BalanceResponse {
+  int32 amount = 1;
+}
+
+message DepositRequest {
+  int32 userId = 1;
+  int32 amount = 2;
+}
+
+message DepositResponse {
+  int32 userId = 1;
+  int32 balance = 2;
+}
+
+message WithdrawRequest {
+  int32 userId = 1;
+  int32 amount = 2;
+}
+
+message WithdrawResponse {
+  int32 userId = 1;
+  int32 balance = 2;
+}
+
