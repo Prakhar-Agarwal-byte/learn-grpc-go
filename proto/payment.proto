@@ -8,6 +8,10 @@ service PaymentsService {
   rpc GetBalance (BalanceRequest) returns (BalanceResponse) {};
   rpc Deposit(DepositRequest) returns (DepositResponse) {};
   rpc Withdraw(WithdrawRequest) returns (WithdrawResponse) {};
+  rpc GetTransactionHistory(TransactionHistoryRequest) returns (stream TransactionHistoryResponse);
+  rpc TransactMultiple(stream TransactRequest) returns (TransactResponse);
+  rpc RealTimeTransfer(stream TransactRequest) returns (stream TransactResponse);
+
 }
 
 message BalanceRequest {
@@ -26,6 +30,7 @@ message DepositRequest {
 message DepositResponse {
   int32 userId = 1;
   int32 balance = 2;
+  bool success = 3;
 }
 
 message WithdrawRequest {
@@ -36,5 +41,33 @@ message WithdrawRequest {
 message WithdrawResponse {
   int32 userId = 1;
   int32 balance = 2;
+  bool success = 3;
 }
+
+message TransactionHistoryRequest {
+  int32 userId = 1;
+}
+
+message TransactionHistoryResponse {
+  int32 userId = 1;
+  int32 transactionId = 2;
+  TransactionType type = 3;
+  int32 amount = 4;
+}
+
+enum TransactionType {
+  DEPOSIT = 0;
+  WITHDRAW = 1;
+}
+
+message TransactRequest {
+  int32 userId = 1;
+  TransactionType type = 2;
+  int32 amount = 3;
+}
+
+message TransactResponse {
+  bool success = 1;
+}
+
 

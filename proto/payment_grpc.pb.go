@@ -25,6 +25,9 @@ type PaymentsServiceClient interface {
 	GetBalance(ctx context.Context, in *BalanceRequest, opts ...grpc.CallOption) (*BalanceResponse, error)
 	Deposit(ctx context.Context, in *DepositRequest, opts ...grpc.CallOption) (*DepositResponse, error)
 	Withdraw(ctx context.Context, in *WithdrawRequest, opts ...grpc.CallOption) (*WithdrawResponse, error)
+	GetTransactionHistory(ctx context.Context, in *TransactionHistoryRequest, opts ...grpc.CallOption) (PaymentsService_GetTransactionHistoryClient, error)
+	TransactMultiple(ctx context.Context, opts ...grpc.CallOption) (PaymentsService_TransactMultipleClient, error)
+	RealTimeTransfer(ctx context.Context, opts ...grpc.CallOption) (PaymentsService_RealTimeTransferClient, error)
 }
 
 type paymentsServiceClient struct {
@@ -62,6 +65,103 @@ func (c *paymentsServiceClient) Withdraw(ctx context.Context, in *WithdrawReques
 	return out, nil
 }
 
+func (c *paymentsServiceClient) GetTransactionHistory(ctx context.Context, in *TransactionHistoryRequest, opts ...grpc.CallOption) (PaymentsService_GetTransactionHistoryClient, error) {
+	stream, err := c.cc.NewStream(ctx, &PaymentsService_ServiceDesc.Streams[0], "/payment.PaymentsService/GetTransactionHistory", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &paymentsServiceGetTransactionHistoryClient{stream}
+	if err := x.ClientStream.SendMsg(in); err != nil {
+		return nil, err
+	}
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	return x, nil
+}
+
+type PaymentsService_GetTransactionHistoryClient interface {
+	Recv() (*TransactionHistoryResponse, error)
+	grpc.ClientStream
+}
+
+type paymentsServiceGetTransactionHistoryClient struct {
+	grpc.ClientStream
+}
+
+func (x *paymentsServiceGetTransactionHistoryClient) Recv() (*TransactionHistoryResponse, error) {
+	m := new(TransactionHistoryResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *paymentsServiceClient) TransactMultiple(ctx context.Context, opts ...grpc.CallOption) (PaymentsService_TransactMultipleClient, error) {
+	stream, err := c.cc.NewStream(ctx, &PaymentsService_ServiceDesc.Streams[1], "/payment.PaymentsService/TransactMultiple", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &paymentsServiceTransactMultipleClient{stream}
+	return x, nil
+}
+
+type PaymentsService_TransactMultipleClient interface {
+	Send(*TransactRequest) error
+	CloseAndRecv() (*TransactResponse, error)
+	grpc.ClientStream
+}
+
+type paymentsServiceTransactMultipleClient struct {
+	grpc.ClientStream
+}
+
+func (x *paymentsServiceTransactMultipleClient) Send(m *TransactRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *paymentsServiceTransactMultipleClient) CloseAndRecv() (*TransactResponse, error) {
+	if err := x.ClientStream.CloseSend(); err != nil {
+		return nil, err
+	}
+	m := new(TransactResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func (c *paymentsServiceClient) RealTimeTransfer(ctx context.Context, opts ...grpc.CallOption) (PaymentsService_RealTimeTransferClient, error) {
+	stream, err := c.cc.NewStream(ctx, &PaymentsService_ServiceDesc.Streams[2], "/payment.PaymentsService/RealTimeTransfer", opts...)
+	if err != nil {
+		return nil, err
+	}
+	x := &paymentsServiceRealTimeTransferClient{stream}
+	return x, nil
+}
+
+type PaymentsService_RealTimeTransferClient interface {
+	Send(*TransactRequest) error
+	Recv() (*TransactResponse, error)
+	grpc.ClientStream
+}
+
+type paymentsServiceRealTimeTransferClient struct {
+	grpc.ClientStream
+}
+
+func (x *paymentsServiceRealTimeTransferClient) Send(m *TransactRequest) error {
+	return x.ClientStream.SendMsg(m)
+}
+
+func (x *paymentsServiceRealTimeTransferClient) Recv() (*TransactResponse, error) {
+	m := new(TransactResponse)
+	if err := x.ClientStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // PaymentsServiceServer is the server API for PaymentsService service.
 // All implementations must embed UnimplementedPaymentsServiceServer
 // for forward compatibility
@@ -69,6 +169,9 @@ type PaymentsServiceServer interface {
 	GetBalance(context.Context, *BalanceRequest) (*BalanceResponse, error)
 	Deposit(context.Context, *DepositRequest) (*DepositResponse, error)
 	Withdraw(context.Context, *WithdrawRequest) (*WithdrawResponse, error)
+	GetTransactionHistory(*TransactionHistoryRequest, PaymentsService_GetTransactionHistoryServer) error
+	TransactMultiple(PaymentsService_TransactMultipleServer) error
+	RealTimeTransfer(PaymentsService_RealTimeTransferServer) error
 	mustEmbedUnimplementedPaymentsServiceServer()
 }
 
@@ -84,6 +187,15 @@ func (UnimplementedPaymentsServiceServer) Deposit(context.Context, *DepositReque
 }
 func (UnimplementedPaymentsServiceServer) Withdraw(context.Context, *WithdrawRequest) (*WithdrawResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Withdraw not implemented")
+}
+func (UnimplementedPaymentsServiceServer) GetTransactionHistory(*TransactionHistoryRequest, PaymentsService_GetTransactionHistoryServer) error {
+	return status.Errorf(codes.Unimplemented, "method GetTransactionHistory not implemented")
+}
+func (UnimplementedPaymentsServiceServer) TransactMultiple(PaymentsService_TransactMultipleServer) error {
+	return status.Errorf(codes.Unimplemented, "method TransactMultiple not implemented")
+}
+func (UnimplementedPaymentsServiceServer) RealTimeTransfer(PaymentsService_RealTimeTransferServer) error {
+	return status.Errorf(codes.Unimplemented, "method RealTimeTransfer not implemented")
 }
 func (UnimplementedPaymentsServiceServer) mustEmbedUnimplementedPaymentsServiceServer() {}
 
@@ -152,6 +264,79 @@ func _PaymentsService_Withdraw_Handler(srv interface{}, ctx context.Context, dec
 	return interceptor(ctx, in, info, handler)
 }
 
+func _PaymentsService_GetTransactionHistory_Handler(srv interface{}, stream grpc.ServerStream) error {
+	m := new(TransactionHistoryRequest)
+	if err := stream.RecvMsg(m); err != nil {
+		return err
+	}
+	return srv.(PaymentsServiceServer).GetTransactionHistory(m, &paymentsServiceGetTransactionHistoryServer{stream})
+}
+
+type PaymentsService_GetTransactionHistoryServer interface {
+	Send(*TransactionHistoryResponse) error
+	grpc.ServerStream
+}
+
+type paymentsServiceGetTransactionHistoryServer struct {
+	grpc.ServerStream
+}
+
+func (x *paymentsServiceGetTransactionHistoryServer) Send(m *TransactionHistoryResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func _PaymentsService_TransactMultiple_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(PaymentsServiceServer).TransactMultiple(&paymentsServiceTransactMultipleServer{stream})
+}
+
+type PaymentsService_TransactMultipleServer interface {
+	SendAndClose(*TransactResponse) error
+	Recv() (*TransactRequest, error)
+	grpc.ServerStream
+}
+
+type paymentsServiceTransactMultipleServer struct {
+	grpc.ServerStream
+}
+
+func (x *paymentsServiceTransactMultipleServer) SendAndClose(m *TransactResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *paymentsServiceTransactMultipleServer) Recv() (*TransactRequest, error) {
+	m := new(TransactRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
+func _PaymentsService_RealTimeTransfer_Handler(srv interface{}, stream grpc.ServerStream) error {
+	return srv.(PaymentsServiceServer).RealTimeTransfer(&paymentsServiceRealTimeTransferServer{stream})
+}
+
+type PaymentsService_RealTimeTransferServer interface {
+	Send(*TransactResponse) error
+	Recv() (*TransactRequest, error)
+	grpc.ServerStream
+}
+
+type paymentsServiceRealTimeTransferServer struct {
+	grpc.ServerStream
+}
+
+func (x *paymentsServiceRealTimeTransferServer) Send(m *TransactResponse) error {
+	return x.ServerStream.SendMsg(m)
+}
+
+func (x *paymentsServiceRealTimeTransferServer) Recv() (*TransactRequest, error) {
+	m := new(TransactRequest)
+	if err := x.ServerStream.RecvMsg(m); err != nil {
+		return nil, err
+	}
+	return m, nil
+}
+
 // PaymentsService_ServiceDesc is the grpc.ServiceDesc for PaymentsService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -172,6 +357,23 @@ var PaymentsService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _PaymentsService_Withdraw_Handler,
 		},
 	},
-	Streams:  []grpc.StreamDesc{},
+	Streams: []grpc.StreamDesc{
+		{
+			StreamName:    "GetTransactionHistory",
+			Handler:       _PaymentsService_GetTransactionHistory_Handler,
+			ServerStreams: true,
+		},
+		{
+			StreamName:    "TransactMultiple",
+			Handler:       _PaymentsService_TransactMultiple_Handler,
+			ClientStreams: true,
+		},
+		{
+			StreamName:    "RealTimeTransfer",
+			Handler:       _PaymentsService_RealTimeTransfer_Handler,
+			ServerStreams: true,
+			ClientStreams: true,
+		},
+	},
 	Metadata: "payment.proto",
 }
